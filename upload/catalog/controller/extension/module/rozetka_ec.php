@@ -43,8 +43,6 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 			return false;
 		}
 		
-		$uuid = (string)$this->generateUUID();
-		
 		$order_info = $this->model_checkout_order->getOrder($order_id);
 		
 		$currency = 'UAH';
@@ -52,7 +50,7 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 		$dataCheckout = new \RPayCheckoutCreatRequest();
 		
 		$dataCheckout->mode = 'express_checkout';		
-		$dataCheckout->external_id = $uuid;
+		$dataCheckout->external_id = $order_id;
 		$dataCheckout->amount = $this->currency->format($order_info['total'], $currency, $this->currency->getValue($currency), false);
 		
 		if($this->customer->isLogged()) {
@@ -93,7 +91,7 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 		}
 		
 		$dataCheckout->callback_url = $server . 'index.php?route=extension/module/rozetka_ec/callback';
-		$dataCheckout->result_url = $server . 'index.php?route=extension/module/rozetka_ec/success&order_id=' . $uuid;
+		$dataCheckout->result_url = $server . 'index.php?route=extension/module/rozetka_ec/success&order_id=' . $order_id;
 		
 		//Log
 		$this->setLog($dataCheckout, 'Дані що йдуть на платіжну систему');
@@ -104,8 +102,6 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 		$this->setLog($result, 'Генерація сторінки оплати');
 		
 		if(!empty($result[0]) && $result[0]['is_success']) {
-			$this->model_extension_module_rozetka_ec->setUuidOrder($order_id, $uuid);
-			
 			return $result[0]['action']['value'];
 		}
 		
@@ -142,7 +138,7 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 				
 				//повернення
 				if($result['operation'] == 'refund') {
-					$order_id = $this->model_extension_module_rozetka_ec->getOrderIdByUuid($result['external_id']);
+					$order_id = $result['external_id'];
 					
 					$order_status_id = $this->config->get('rozetka_ec_order_refund_status_id');
 				}
@@ -509,27 +505,6 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 			$log->write(json_encode($data));
 			$log->write('--------- ' . $text . ': КІНЕЦЬ ---------');
 		}
-	}
-	
-	/**
-     * Метод генерації унікального ідентифікатор замовлення
-     * 
-     * @return string повертає унікальний ідентифікатор
-     */
-	private function generateUUID() {
-		$uuid = sprintf(
-			'%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-			mt_rand(0, 0xffff),
-			mt_rand(0, 0xffff),
-			mt_rand(0, 0xffff),
-			mt_rand(0, 0x0fff) | 0x4000,
-			mt_rand(0, 0x3fff) | 0x8000,
-			mt_rand(0, 0xffff),
-			mt_rand(0, 0xffff),
-			mt_rand(0, 0xffff)
-		);
-		
-		return $uuid;
 	}
 	
 	/**

@@ -332,7 +332,7 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 		$data['result'] = array();
 		$data['token'] = $this->session->data['token'];
 		
-		if(isset($this->request->get['rozetka_uuid'])) {
+		if(isset($this->request->get['order_id'])) {
 			
 			$data['text_info_payment_id'] = $this->language->get('text_info_payment_id');
 			$data['text_info_status'] = $this->language->get('text_info_status');
@@ -348,7 +348,9 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 			$data['text_cancel_pay'] = $this->language->get('text_cancel_pay');
 			$data['text_empty'] = $this->language->get('text_empty');
 			
-			$result = $this->convertToObjectArray($this->rpay->paymentInfo((string)$this->request->get['rozetka_uuid']));
+			$order_id = (int)$this->request->get['order_id'];
+			
+			$result = $this->convertToObjectArray($this->rpay->paymentInfo($order_id));
 
 			if(!empty($result[0])) {
 				$result_data = $result[0];
@@ -383,12 +385,12 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 				}
 				
 				$data['result'] = array(
-					'uuid'				=> $result_data['external_id'],
+					'order_id'			=> $order_id,
 					'text_status'		=> $status,
-					'status'			=> $result_data['purchase_details'][0]['status_code'],
+					'status'				=> $result_data['purchase_details'][0]['status_code'],
 					'failureReason'		=> !empty($result_data['canceled']) ? $result_data['cancellation_details'] : '',
-					'amount'			=> $result_data['amount'],
-					'amount_refunded'	=> $result_data['amount_refunded'],
+					'amount'				=> $result_data['amount'],
+					'amount_refunded'		=> $result_data['amount_refunded'],
 					'amount_final'		=> $amount_final,
 					'currency'			=> $result_data['currency'],
 					'refunded'			=> $result_data['refunded'],
@@ -411,8 +413,8 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 	public function paymentRefund() {
 		$json = array();
 		
-		if(!empty($this->request->get['rozetka_uuid'])) {
-			$order_id = $this->model_extension_module_rozetka_ec->getOrderId($this->request->get['rozetka_uuid']);
+		if(!empty($this->request->get['order_id'])) {
+			$order_id = $this->request->get['order_id'];
 			
 			if($order_id) {
 				$this->load->model('sale/order');
@@ -423,7 +425,7 @@ class ControllerExtensionModuleRozetkaEc extends Controller {
 					$dataCheckout = new \RPayCheckoutCreatRequest();
 
 					$dataCheckout->amount = $this->currency->format($this->request->get['amount'], $order_info['currency_code'], false, false);
-					$dataCheckout->external_id = $this->request->get['rozetka_uuid'];
+					$dataCheckout->external_id = $order_id;
 					$dataCheckout->currency = $order_info['currency_code'];
 					
 					if ($this->request->server['HTTPS']) {

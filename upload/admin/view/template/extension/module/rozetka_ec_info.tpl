@@ -2,8 +2,8 @@
 	<div class="modal-body">
 		<div class="table-responsive">
 			<table class="table table-striped table-hover">
-			<?php if (!empty($result['uuid'])) { ?>
-				<tr><td><b><?php echo $text_info_payment_id; ?></b></td><td><?php echo $result['uuid']; ?></td></tr>
+			<?php if (!empty($result['order_id'])) { ?>
+				<tr><td><b><?php echo $text_info_payment_id; ?></b></td><td><?php echo $result['order_id']; ?></td></tr>
 			<?php } ?>
 			<?php if (!empty($result['text_status'])) { ?>
 				<tr><td><b><?php echo $text_info_status; ?></b></td><td><?php echo $result['text_status']; ?></td></tr>
@@ -45,7 +45,7 @@
 				<input type="text" name="amount_transaction" value="<?php echo $result['amount']; ?>" id="input-amount" class="form-control" style="float:left;max-width:110px;margin-left:10px" />
 			</div>
 		</div>
-        <button type="button" class="btn btn-danger" id="cancel-rc-pay" data-uuid="<?php echo $result['uuid']; ?>"><?php echo $text_cancel_pay; ?></button>
+        <button type="button" class="btn btn-danger" id="cancel-rc-pay" data-order_id="<?php echo $result['order_id']; ?>"><?php echo $text_cancel_pay; ?></button>
       </div>
 	<?php } ?>
 	<?php } else { ?>
@@ -56,10 +56,10 @@
 	<script>		
 		$('#cancel-rc-pay').on('click', function() {
 			var amount = parseFloat($('#input-amount').val());
-			var uuid = $(this).attr('data-uuid');
+			var order_id = $(this).attr('data-order_id');
 
 			$.ajax({
-				url: 'index.php?route=extension/module/rozetka_ec/paymentRefund&token=<?php echo $token; ?>&amount=' + encodeURIComponent(amount) + '&rozetka_uuid=' + encodeURIComponent(uuid),
+				url: 'index.php?route=extension/module/rozetka_ec/paymentRefund&token=<?php echo $token; ?>&amount=' + encodeURIComponent(amount) + '&order_id=' + encodeURIComponent(order_id),
 				dataType: 'json',
 				beforeSend: function() {
 					$('#cancel-rc-pay').button('loading');

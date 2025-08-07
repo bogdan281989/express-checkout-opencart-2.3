@@ -48,7 +48,7 @@
     <script>
     	$('#get-info-rc').on('click', function() {
     		$.ajax({
-    			url: 'index.php?route=extension/module/rozetka_ec/getInfoPayment&token=<?php echo $token; ?>&rozetka_uuid=<?php echo $rozetka_uuid; ?>',
+    			url: 'index.php?route=extension/module/rozetka_ec/getInfoPayment&token=<?php echo $token; ?>&order_id=<?php echo $order_id; ?>',
     			dataType: 'html',
     			beforeSend: function() {
     				$('#get-info-rc').button('loading');
@@ -80,7 +80,7 @@
     		$.ajax({
     			url: 'index.php?route=extension/module/rozetka_ec/getResendCallback&token=<?php echo $token; ?>',
 				type: 'post',
-				data: 'order_id=<?php echo $rozetka_uuid; ?>',
+				data: 'order_id=<?php echo $order_id; ?>',
     			dataType: 'json',
     			beforeSend: function() {
     				$('#get-callback').button('loading');
@@ -143,15 +143,11 @@
       <search><![CDATA[$this->load->model('extension/extension');]]></search>
       <add position="before"><![CDATA[
       $data['payment_code'] = $order_info['payment_code'];
+      $data['order_id'] = $order_info['order_id'];
       $data['text_trans_order'] = $this->language->get('text_trans_order');
       $data['text_callback'] = $this->language->get('text_callback');
       $data['text_info_trans'] = $this->language->get('text_info_trans');
-      $data['text_refund_pay'] = $this->language->get('text_refund_pay');
-	  
-	  $this->load->model('extension/module/rozetka_ec');
-	  
-	  $data['rozetka_uuid'] = $this->model_extension_module_rozetka_ec->getUuid($this->request->get['order_id']);
-	  
+      $data['text_refund_pay'] = $this->language->get('text_refund_pay');  
       ]]></add>
     </operation>
   </file>

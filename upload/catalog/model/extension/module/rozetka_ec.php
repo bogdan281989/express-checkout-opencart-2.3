@@ -9,7 +9,7 @@ class ModelExtensionModuleRozetkaEc extends Model {
      * @return int|false ID замовлення, якщо оновлення успішне, або false у разі помилки.
      */
 	public function setOrderData($data) {
-		$order_id = $this->getOrderIdByUuid($data['external_id']);
+		$order_id = $data['external_id'];
 		
 		$query_order_data = $this->db->query("SELECT * FROM `" . DB_PREFIX . "order` WHERE `order_id` = '" . (int)$order_id . "' AND `order_status_id` = 0");
 		
@@ -68,23 +68,6 @@ class ModelExtensionModuleRozetkaEc extends Model {
 	}
 	
 	/**
-     * Отримує ID замовлення за його UUID.
-     *
-     * @param string $uuid Унікальний ідентифікатор Rozetka.
-     * 
-     * @return int|false ID замовлення або false, якщо запис не знайдено.
-     */
-	public function getOrderIdByUuid($uuid) {
-		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "rozetka_ec_uuid` WHERE `uuid` = '" . $this->db->escape($uuid) . "'");
-		
-		if($query->num_rows) {
-			return $query->row['order_id'];
-		} else {
-			return false;
-		}
-	}
-	
-	/**
      * Отримує "чисті" (оригінальні) дані замовлення.
      *
      * @param int $order_id ID замовлення.
@@ -132,23 +115,21 @@ class ModelExtensionModuleRozetkaEc extends Model {
 	private function getAddress($data) {
 		$address_1 = '';
 		
-		if(!empty($data['provider']) && $data['provider'] == 'nova_poshta') {
+		if(!empty($data['provider'])) {
 			if($data['delivery_type'] == 'D') {
 				$address_1 = $data['street'] . ', ' . $data['house'];
 				
 				if(!empty($data['apartment'])) {
 					$address_1 .= ', ' . $data['apartment'];
 				}
-			} elseif($data['delivery_type'] == 'W') {
-                $address_1 = !empty($data['warehouse_number']['name']) ? $data['warehouse_number']['name'] : $data['warehouse_number'];
-			} elseif($data['delivery_type'] == 'P') {
-                $address_1 = !empty($data['warehouse_number']['name']) ? $data['warehouse_number']['name'] : $data['warehouse_number'];
+			} else {
+				$address_1 = !empty($data['warehouse_number']['name']) ? $data['warehouse_number']['name'] : $data['warehouse_number'];
 			}
 		}
 		
 		return array(
 			'address_1'	=> $address_1,
-			'city'      => !empty($data['city']['cityName']) ? $data['city']['cityName'] : $data['city'],
+			'city'		=> !empty($data['city']['cityName']) ? $data['city']['cityName'] : $data['city'],
 		);
 	}
 	
@@ -206,35 +187,71 @@ class ModelExtensionModuleRozetkaEc extends Model {
 	private function getShippingMethod($data) {
 		$code = '';
 		$name = '';
-		
-		if(!empty($data['provider']) && $data['provider'] == 'nova_poshta') {
-			if($data['delivery_type'] == 'D') {
-				$code = 'novaposhta.doors';
-				$name = $this->language->get('text_nova_poshta_d');
-			} elseif($data['delivery_type'] == 'W') {
-				$code = 'novaposhta.department';
-				$name = $this->language->get('text_nova_poshta_w');
-			} elseif($data['delivery_type'] == 'P') {
-				$code = 'novaposhta.poshtomat';
-				$name = $this->language->get('text_nova_poshta_p');
+
+		if (!empty($data['provider'])) {
+			switch ($data['provider']) {
+				case 'nova_poshta':
+					switch ($data['delivery_type']) {
+						case 'D':
+							$code = 'novaposhta.doors';
+							$name = $this->language->get('text_nova_poshta_d');
+							break;
+						case 'W':
+							$code = 'novaposhta.department';
+							$name = $this->language->get('text_nova_poshta_w');
+							break;
+						case 'P':
+							$code = 'novaposhta.poshtomat';
+							$name = $this->language->get('text_nova_poshta_p');
+							break;
+					}
+					break;
+
+				case 'rozetka':
+					switch ($data['delivery_type']) {
+						case 'W':
+							$code = 'rozetka.department';
+							$name = $this->language->get('text_rozetka_w');
+							break;
+					}
+					break;
+
+				case 'ukrposhta':
+					switch ($data['delivery_type']) {
+						case 'D':
+							$code = 'ukrposhta.doors';
+							$name = $this->language->get('text_ukrposhta_d');
+							break;
+						case 'W':
+							$code = 'ukrposhta.department';
+							$name = $this->language->get('text_ukrposhta_w');
+							break;
+					}
+					break;
+
+				case 'meest':
+					switch ($data['delivery_type']) {
+						case 'D':
+							$code = 'meest.doors';
+							$name = $this->language->get('text_meest_d');
+							break;
+						case 'W':
+							$code = 'meest.department';
+							$name = $this->language->get('text_meest_w');
+							break;
+						case 'P':
+							$code = 'meest.poshtomat';
+							$name = $this->language->get('text_meest_p');
+							break;
+					}
+					break;
 			}
 		}
-		
+
 		return array(
-			'code'		=> $code,
-			'name'		=> $name,
+			'code' => $code,
+			'name' => $name,
 		);
-	}
-	
-	/**
-     * Прив'язує UUID до замовлення.
-     *
-     * @param int $order_id ID замовлення.
-     * @param string $uuid Унікальний ідентифікатор Rozetka.
-     */
-	public function setUuidOrder($order_id, $uuid) {
-		$this->db->query("DELETE FROM `" . DB_PREFIX . "rozetka_ec_uuid` WHERE `order_id` = '" . (int)$order_id . "'");
-		$this->db->query("INSERT INTO `" . DB_PREFIX . "rozetka_ec_uuid` (`order_id`, `uuid`) VALUES ('" . (int)$order_id . "', '" . $this->db->escape($uuid) . "')");
 	}
 	
 	/**
@@ -278,12 +295,12 @@ class ModelExtensionModuleRozetkaEc extends Model {
 	
 		
 	/**
-     * Перевірка замовлення на постоплату по UUID.
+     * Перевірка замовлення на постоплату по order_id.
      *
-     * @param string $uuid Унікальний ідентифікатор Rozetka.
+     * @param string $order_id Унікальний ідентифікатор замовлення Opencart.
      */
 	public function checkOrderPostpayment($uuid) {
-		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "rozetka_ec_uuid` reu LEFT JOIN `" . DB_PREFIX . "order` o ON(reu.order_id = o.order_id) WHERE reu.uuid = '" . $this->db->escape($uuid) . "' AND o.payment_code = 'rozetka_checkout_postpayment'");
+		$query = $this->db->query("SELECT * FROM `" . DB_PREFIX . "order` WHERE order_id = '" . $this->db->escape($order_id) . "' AND payment_code = 'rozetka_checkout_postpayment'");
 		
 		return $query->row;
 	}
